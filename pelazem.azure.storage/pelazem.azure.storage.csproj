@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.1</Version>
+    <Authors>Patrick El-Azem (www.linkedin.com/in/pelazem)</Authors>
+    <Description>A wrapper library around Azure storage that presents a simplified interface for typical Azure storage operations.</Description>
+    <PackageProjectUrl>https://github.com/plzm/pelazem.azure.storage</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/plzm/pelazem.azure.storage</RepositoryUrl>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
+  </ItemGroup>
+
+</Project>
