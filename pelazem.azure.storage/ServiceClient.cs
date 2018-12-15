@@ -14,31 +14,33 @@ namespace pelazem.azure.storage
 {
 	public class ServiceClient
 	{
-		public async Task<string> GetBlobUrlAsync(StorageConfig storageConfig, string blobPath)
+		#region Get Blob URL
+
+		public async Task<string> GetBlobUrlFromBlobPathAsync(StorageConfig storageConfig, string blobPath)
 		{
-			if (string.IsNullOrWhiteSpace(blobPath) || !storageConfig.IsValidForBlob())
+			if (string.IsNullOrWhiteSpace(blobPath))
 				return string.Empty;
 
-			ICloudBlob blob = await GetBlobFromPathAsync(storageConfig, blobPath);
+			ICloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, blobPath);
 
 			return blob.Uri.AbsoluteUri;
 		}
 
-		public async Task<string> GetBlobSharedAccessUrlAsync(StorageConfig storageConfig, string blobPath, string sharedAccessPolicyName)
+		public async Task<string> GetBlobSAPUrlFromBlobPathAsync(StorageConfig storageConfig, string blobPath, string sharedAccessPolicyName)
 		{
 			string result = string.Empty;
 
-			if (string.IsNullOrWhiteSpace(blobPath) || !storageConfig.IsValidForBlob())
+			if (string.IsNullOrWhiteSpace(blobPath))
 				return result;
 
-			ICloudBlob blob = await GetBlobFromPathAsync(storageConfig, blobPath);
+			ICloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, blobPath);
 
-			StorageCredentials storageCredentials = GetStorageCredentials(storageConfig);
-			CloudStorageAccount storageAccount = GetStorageAccount(storageCredentials);
-			CloudBlobClient blobClient = GetBlobClient(storageAccount);
-			CloudBlobContainer container = await GetContainerAsync(storageConfig, blobClient, true);
+			StorageCredentials storageCredentials = this.GetStorageCredentials(storageConfig);
+			CloudStorageAccount storageAccount = this.GetStorageAccount(storageCredentials);
+			CloudBlobClient blobClient = this.GetBlobClient(storageAccount);
+			CloudBlobContainer container = await this.GetContainerAsync(storageConfig, blobClient, true);
 
-			SharedAccessBlobPolicy policy = await GetSharedAccessPolicy(container, sharedAccessPolicyName);
+			SharedAccessBlobPolicy policy = await this.GetSharedAccessPolicy(container, sharedAccessPolicyName);
 
 			if (policy != null)
 				result = blob.Uri.AbsoluteUri + blob.GetSharedAccessSignature(policy);
@@ -46,14 +48,14 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public async Task<string> GetBlobSharedAccessUrlAsync(ICloudBlob blob, string sharedAccessPolicyName)
+		public async Task<string> GetBlobSAPUrlFromBlobAsync(ICloudBlob blob, string sharedAccessPolicyName)
 		{
 			string result = string.Empty;
 
 			if (blob == null)
 				return result;
 
-			SharedAccessBlobPolicy policy = await GetSharedAccessPolicy(blob.Container, sharedAccessPolicyName);
+			SharedAccessBlobPolicy policy = await this.GetSharedAccessPolicy(blob.Container, sharedAccessPolicyName);
 
 			if (policy != null)
 				result = blob.Uri.AbsoluteUri + blob.GetSharedAccessSignature(policy);
@@ -61,14 +63,23 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public async Task<string> GetBlobSharedAccessUrlAsync(StorageConfig storageConfig, string blobPath, DateTimeOffset expiryDateTime, SharedAccessBlobPermissions policyPermissions = SharedAccessBlobPermissions.Read)
+		public async Task<string> GetBlobSAPUrlFromBlobUrlAsync(StorageConfig storageConfig, string blobUrl, string sharedAccessPolicyName)
+		{
+			ICloudBlob blob = await GetBlobFromUrlAsync(storageConfig, blobUrl);
+
+			string sapUrl = await GetBlobSAPUrlFromBlobAsync(blob, sharedAccessPolicyName);
+
+			return sapUrl;
+		}
+
+		public async Task<string> GetBlobSASUrlFromBlobPathAsync(StorageConfig storageConfig, string blobPath, DateTimeOffset expiryDateTime, SharedAccessBlobPermissions policyPermissions = SharedAccessBlobPermissions.Read)
 		{
 			string result = string.Empty;
 
-			if (string.IsNullOrWhiteSpace(blobPath) || !storageConfig.IsValidForBlob())
+			if (string.IsNullOrWhiteSpace(blobPath))
 				return result;
 
-			ICloudBlob blob = await GetBlobFromPathAsync(storageConfig, blobPath);
+			ICloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, blobPath);
 
 			SharedAccessBlobPolicy sasBlobPolicy = new SharedAccessBlobPolicy();
 			sasBlobPolicy.SharedAccessStartTime = DateTimeOffset.UtcNow.AddMinutes(-5); // For clock skew
@@ -83,7 +94,7 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public string GetBlobSharedAccessUrl(ICloudBlob blob, DateTimeOffset expiryDateTime, SharedAccessBlobPermissions policyPermissions = SharedAccessBlobPermissions.Read)
+		public string GetBlobSASUrlFromBlob(ICloudBlob blob, DateTimeOffset expiryDateTime, SharedAccessBlobPermissions policyPermissions = SharedAccessBlobPermissions.Read)
 		{
 			string result = string.Empty;
 
@@ -103,10 +114,77 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
+		#endregion
 
-		public async Task<bool> UploadFileFromUrlAsync(string sourceFileUrl, string targetBlobPath, StorageConfig storageConfig)
+		#region Get Blob
+
+		public ICloudBlob GetBlobFromPath(CloudBlobContainer container, string targetBlobPath)
 		{
-			if (string.IsNullOrWhiteSpace(sourceFileUrl) || string.IsNullOrWhiteSpace(targetBlobPath) || !storageConfig.IsValidForBlob())
+			ICloudBlob blob = container.GetBlobReference(targetBlobPath) as ICloudBlob;
+
+			return blob;
+		}
+
+		public async Task<ICloudBlob> GetBlobFromPathAsync(StorageConfig storageConfig, string targetBlobPath)
+		{
+			StorageCredentials storageCredentials = this.GetStorageCredentials(storageConfig);
+			CloudStorageAccount storageAccount = this.GetStorageAccount(storageCredentials);
+			CloudBlobClient blobClient = this.GetBlobClient(storageAccount);
+
+			CloudBlobContainer container = await this.GetContainerAsync(storageConfig, blobClient, true);
+
+			ICloudBlob blob = this.GetBlobFromPath(container, targetBlobPath);
+
+			return blob;
+		}
+
+		public async Task<ICloudBlob> GetBlobFromUrlAsync(StorageConfig storageConfig, string blobUrl)
+		{
+			StorageCredentials storageCredentials = this.GetStorageCredentials(storageConfig);
+			CloudStorageAccount storageAccount = this.GetStorageAccount(storageCredentials);
+			CloudBlobClient blobClient = this.GetBlobClient(storageAccount);
+
+			ICloudBlob result = await blobClient.GetBlobReferenceFromServerAsync(new Uri(blobUrl));
+
+			return result;
+		}
+
+		#endregion
+
+		#region List Blobs
+
+		public async Task<IEnumerable<ICloudBlob>> ListBlobs(StorageConfig storageConfig)
+		{
+			StorageCredentials credentials = this.GetStorageCredentials(storageConfig);
+			CloudStorageAccount storageAccount = this.GetStorageAccount(credentials);
+			CloudBlobClient blobClient = this.GetBlobClient(storageAccount);
+			CloudBlobContainer container = await this.GetContainerAsync(storageConfig, blobClient, true);
+
+			List<ICloudBlob> result = new List<ICloudBlob>();
+
+			BlobContinuationToken token = null;
+
+			do
+			{
+				var response = await container.ListBlobsSegmentedAsync(string.Empty, true, BlobListingDetails.Metadata, 50, token, null, null);
+
+				token = response.ContinuationToken;
+
+				foreach (var blob in response.Results.Where(b => b is ICloudBlob))
+					result.Add(blob as ICloudBlob);
+			}
+			while (token != null);
+
+			return result;
+		}
+
+		#endregion
+
+		#region Upload Blob
+
+		public async Task<bool> UploadFileFromUrlAsync(StorageConfig storageConfig, string sourceFileUrl, string targetBlobPath)
+		{
+			if (string.IsNullOrWhiteSpace(sourceFileUrl) || string.IsNullOrWhiteSpace(targetBlobPath))
 				return false;
 
 			bool result = false;
@@ -123,7 +201,7 @@ namespace pelazem.azure.storage
 				{
 					using (Stream stream = response.GetResponseStream())
 					{
-						result = await UploadStreamAsync(stream, targetBlobPath, storageConfig);
+						result = await this.UploadStreamAsync(storageConfig, stream, targetBlobPath);
 					}
 				}
 			}
@@ -137,13 +215,12 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public async Task<bool> UploadFileFromLocalAsync(string sourceFilePath, string targetBlobPath, StorageConfig storageConfig)
+		public async Task<bool> UploadFileFromLocalAsync(StorageConfig storageConfig, string sourceFilePath, string targetBlobPath)
 		{
 			if
 			(
 				string.IsNullOrWhiteSpace(sourceFilePath) ||
 				string.IsNullOrWhiteSpace(targetBlobPath) ||
-				!storageConfig.IsValidForBlob() ||
 				!File.Exists(sourceFilePath)
 			)
 				return false;
@@ -152,9 +229,9 @@ namespace pelazem.azure.storage
 
 			try
 			{
-				using (FileStream fileStream = File.OpenRead(sourceFilePath))
+				using (FileStream stream = File.OpenRead(sourceFilePath))
 				{
-					result = await UploadStreamAsync(fileStream, targetBlobPath, storageConfig);
+					result = await this.UploadStreamAsync(storageConfig, stream, targetBlobPath);
 				}
 			}
 			catch (Exception ex)
@@ -167,12 +244,12 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public async Task<bool> UploadStreamAsync(Stream sourceStream, string targetBlobPath, StorageConfig storageConfig)
+		public async Task<bool> UploadStreamAsync(StorageConfig storageConfig, Stream sourceStream, string targetBlobPath)
 		{
 			if (sourceStream == null || sourceStream.Length == 0)
 				return false;
 
-			if (string.IsNullOrWhiteSpace(targetBlobPath) || !storageConfig.IsValidForBlob())
+			if (string.IsNullOrWhiteSpace(targetBlobPath))
 				return false;
 
 			bool result = false;
@@ -188,7 +265,7 @@ namespace pelazem.azure.storage
 					bytes = memoryStream.ToArray();
 				}
 
-				result = await UploadByteArrayAsync(bytes, targetBlobPath, storageConfig);
+				result = await this.UploadByteArrayAsync(storageConfig, bytes, targetBlobPath);
 			}
 			catch (Exception ex)
 			{
@@ -200,19 +277,19 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public async Task<bool> UploadByteArrayAsync(byte[] bytes, string targetBlobPath, StorageConfig storageConfig)
+		public async Task<bool> UploadByteArrayAsync(StorageConfig storageConfig, byte[] bytes, string targetBlobPath)
 		{
 			if (bytes == null || bytes.Length == 0)
 				return false;
 
-			if (string.IsNullOrWhiteSpace(targetBlobPath) || !storageConfig.IsValidForBlob())
+			if (string.IsNullOrWhiteSpace(targetBlobPath))
 				return false;
 
 			bool result = false;
 
 			try
 			{
-				ICloudBlob blob = await GetBlobFromPathAsync(storageConfig, targetBlobPath);
+				ICloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, targetBlobPath);
 
 				// Upload the file
 				await blob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
@@ -230,6 +307,9 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
+		#endregion
+
+		#region Shared Access Policy
 
 		public async Task<SharedAccessBlobPolicy> GetSharedAccessPolicy(CloudBlobContainer container, string policyName)
 		{
@@ -261,6 +341,15 @@ namespace pelazem.azure.storage
 			await container.SetPermissionsAsync(permissions);
 		}
 
+		#endregion
+
+		#region Storage Primitives
+
+		public StorageConfig GetStorageConfig(string storageAccountName, string storageAccountKey, string containerName)
+		{
+			return new StorageConfig() { StorageAccountName = storageAccountName, StorageAccountKey = storageAccountKey, ContainerName = containerName };
+		}
+
 		public StorageCredentials GetStorageCredentials(StorageConfig storageConfig)
 		{
 			StorageCredentials storageCredentials = new StorageCredentials(storageConfig.StorageAccountName, storageConfig.StorageAccountKey);
@@ -284,14 +373,14 @@ namespace pelazem.azure.storage
 
 		public async Task<CloudBlobContainer> GetContainerAsync(StorageConfig storageConfig, CloudBlobClient blobClient, bool createIfNotExists, BlobContainerPublicAccessType publicAccessIfCreating = BlobContainerPublicAccessType.Off)
 		{
-			if (!storageConfig.IsValidForBlob() || blobClient == null)
+			if (blobClient == null)
 				return null;
 
 			CloudBlobContainer result = null;
 
 			try
 			{
-				result = blobClient.GetContainerReference(storageConfig.BlobContainerName);
+				result = blobClient.GetContainerReference(storageConfig.ContainerName);
 
 				if (!(await result.ExistsAsync()) && createIfNotExists)
 				{
@@ -311,35 +400,6 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public ICloudBlob GetBlobFromPath(CloudBlobContainer container, string targetBlobPath)
-		{
-			ICloudBlob blob = container.GetBlobReference(targetBlobPath) as ICloudBlob;
-
-			return blob;
-		}
-
-		public async Task<ICloudBlob> GetBlobFromPathAsync(StorageConfig storageConfig, string targetBlobPath)
-		{
-			StorageCredentials storageCredentials = GetStorageCredentials(storageConfig);
-			CloudStorageAccount storageAccount = GetStorageAccount(storageCredentials);
-			CloudBlobClient blobClient = GetBlobClient(storageAccount);
-
-			CloudBlobContainer container = await GetContainerAsync(storageConfig, blobClient, true);
-
-			ICloudBlob blob = GetBlobFromPath(container, targetBlobPath);
-
-			return blob;
-		}
-
-		public async Task<ICloudBlob> GetBlobFromUrlAsync(StorageConfig storageConfig, string blobUrl)
-		{
-			StorageCredentials storageCredentials = GetStorageCredentials(storageConfig);
-			CloudStorageAccount storageAccount = GetStorageAccount(storageCredentials);
-			CloudBlobClient blobClient = GetBlobClient(storageAccount);
-
-			ICloudBlob result = await blobClient.GetBlobReferenceFromServerAsync(new Uri(blobUrl));
-
-			return result;
-		}
+		#endregion
 	}
 }

@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
@@ -12,28 +14,44 @@ namespace pelazem.azure.storage
 	{
 		static void Main(string[] args)
 		{
-			ProcessBlob().Wait();
+			string containerName = "";
+			string accountName = "";
+			string key = "";
+			string policyName = "";
+
+			StorageConfig config = new StorageConfig() { ContainerName = containerName, StorageAccountName = accountName, StorageAccountKey = key };
+
+			// ProcessBlob(config, url, policyName).Wait();
+
+			ListBlobs(config, policyName).Wait();
 
 			Console.WriteLine();
 			Console.WriteLine("Done. Press any key to exit.");
 			Console.ReadKey();
 		}
 
-		static async Task ProcessBlob()
+		static async Task ListBlobs(StorageConfig config, string policyName)
 		{
-			string containerName = "";
-			string accountName = "";
-			string key = "";
-
-			StorageConfig config = new StorageConfig() { BlobContainerName = containerName, StorageAccountName = accountName, StorageAccountKey = key };
-
 			ServiceClient svc = new ServiceClient();
 
-			ICloudBlob blob = await svc.GetBlobFromUrlAsync(config, "");
+			List<ICloudBlob> blobsRaw = (await svc.ListBlobs(config)).ToList();
+			List<string> sasUrls = new List<string>();
 
-			string url = await svc.GetBlobSharedAccessUrlAsync(blob, "");
+			foreach (ICloudBlob blob in blobsRaw)
+				sasUrls.Add(await svc.GetBlobSAPUrlFromBlobAsync(blob, policyName));
 
-			Debug.WriteLine(url);
+			Debug.WriteLine(sasUrls.Count);
+		}
+
+		static async Task ProcessBlob(StorageConfig config, string url, string policyName)
+		{
+			ServiceClient svc = new ServiceClient();
+
+			ICloudBlob blob = await svc.GetBlobFromUrlAsync(config, url);
+
+			string sasUrl = await svc.GetBlobSAPUrlFromBlobAsync(blob, policyName);
+
+			Debug.WriteLine(sasUrl);
 		}
 	}
 }
