@@ -21,13 +21,22 @@ namespace pelazem.azure.storage
 
 			StorageConfig config = new StorageConfig() { ContainerName = containerName, StorageAccountName = accountName, StorageAccountKey = key };
 
+			UploadBlob(config).Wait();
+
 			// ProcessBlob(config, url, policyName).Wait();
 
-			ListBlobs(config, policyName).Wait();
+			//ListBlobs(config, policyName).Wait();
 
 			Console.WriteLine();
 			Console.WriteLine("Done. Press any key to exit.");
 			Console.ReadKey();
+		}
+
+		static async Task UploadBlob(StorageConfig config)
+		{
+			ServiceClient svc = new ServiceClient();
+
+			bool result = await svc.UploadStringAsync(config, "This is a test", "foo.txt");
 		}
 
 		static async Task ListBlobs(StorageConfig config, string policyName)
