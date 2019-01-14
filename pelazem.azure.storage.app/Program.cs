@@ -12,53 +12,73 @@ namespace pelazem.azure.storage
 {
 	class Program
 	{
+		private static string _containerName = "test";
+		private static string _queueName = "";
+		private static string _accountName = "";
+		private static string _key = "";
+		private static string _policyName = "";
+
 		static void Main(string[] args)
 		{
-			string containerName = "";
-			string accountName = "";
-			string key = "";
-			string policyName = "";
+			Enqueue().Wait();
 
-			StorageConfig config = new StorageConfig() { ContainerName = containerName, StorageAccountName = accountName, StorageAccountKey = key };
+			//UploadBlob().Wait();
 
-			UploadBlob(config).Wait();
+			// ListBlobs().Wait();
 
-			// ProcessBlob(config, url, policyName).Wait();
-
-			//ListBlobs(config, policyName).Wait();
+			// ProcessBlob(url).Wait();
 
 			Console.WriteLine();
 			Console.WriteLine("Done. Press any key to exit.");
 			Console.ReadKey();
 		}
 
-		static async Task UploadBlob(StorageConfig config)
+		static async Task Enqueue()
 		{
 			ServiceClient svc = new ServiceClient();
 
-			bool result = await svc.UploadStringAsync(config, "This is a test", "foo.txt");
+			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
+			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
+
+			var result = await svc.Enqueue(storageAccount, _queueName, "This is a test");
 		}
 
-		static async Task ListBlobs(StorageConfig config, string policyName)
+		static async Task UploadBlob()
 		{
 			ServiceClient svc = new ServiceClient();
 
-			List<ICloudBlob> blobsRaw = (await svc.ListBlobs(config)).ToList();
+			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
+			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
+
+			var result = await svc.UploadStringAsync(storageAccount, _containerName, "This is a test", "foo.txt");
+		}
+
+		static async Task ListBlobs()
+		{
+			ServiceClient svc = new ServiceClient();
+
+			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
+			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
+
+			List<ICloudBlob> blobsRaw = (await svc.ListBlobs(storageAccount, _containerName)).ToList();
 			List<string> sasUrls = new List<string>();
 
 			foreach (ICloudBlob blob in blobsRaw)
-				sasUrls.Add(await svc.GetBlobSAPUrlFromBlobAsync(blob, policyName));
+				sasUrls.Add(await svc.GetBlobSAPUrlFromBlobAsync(blob, _policyName));
 
 			Debug.WriteLine(sasUrls.Count);
 		}
 
-		static async Task ProcessBlob(StorageConfig config, string url, string policyName)
+		static async Task ProcessBlob(string url)
 		{
 			ServiceClient svc = new ServiceClient();
 
-			ICloudBlob blob = await svc.GetBlobFromUrlAsync(config, url);
+			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
+			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
 
-			string sasUrl = await svc.GetBlobSAPUrlFromBlobAsync(blob, policyName);
+			ICloudBlob blob = await svc.GetBlobFromUrlAsync(storageAccount, url);
+
+			string sasUrl = await svc.GetBlobSAPUrlFromBlobAsync(blob, _policyName);
 
 			Debug.WriteLine(sasUrl);
 		}

@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Queue;
+using pelazem.util;
 
 // Reference https://docs.microsoft.com/en-us/azure/storage/blobs/storage-dotnet-shared-access-signature-part-2
 
@@ -17,26 +19,30 @@ namespace pelazem.azure.storage
 	{
 		#region Get Blob URL
 
-		public async Task<string> GetBlobUrlFromBlobPathAsync(StorageConfig storageConfig, string blobPath)
-		{
-			if (string.IsNullOrWhiteSpace(blobPath))
-				return string.Empty;
-
-			CloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, blobPath);
-
-			return blob.Uri.AbsoluteUri;
-		}
-
-		public async Task<string> GetBlobSAPUrlFromBlobPathAsync(StorageConfig storageConfig, string blobPath, string sharedAccessPolicyName)
+		public async Task<string> GetBlobUrlFromBlobPathAsync(CloudStorageAccount storageAccount, string containerName, string blobPath)
 		{
 			string result = string.Empty;
 
-			if (string.IsNullOrWhiteSpace(blobPath))
+			if (storageAccount == null || string.IsNullOrWhiteSpace(containerName) || string.IsNullOrWhiteSpace(blobPath))
 				return result;
 
-			CloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, blobPath);
+			CloudBlob blob = await this.GetBlobFromPathAsync(storageAccount, containerName, blobPath);
 
-			CloudBlobContainer container = await this.GetContainerAsync(storageConfig, true);
+			result = blob.Uri.AbsoluteUri;
+
+			return result;
+		}
+
+		public async Task<string> GetBlobSAPUrlFromBlobPathAsync(CloudStorageAccount storageAccount, string containerName, string blobPath, string sharedAccessPolicyName)
+		{
+			string result = string.Empty;
+
+			if (storageAccount == null || string.IsNullOrWhiteSpace(containerName) || string.IsNullOrWhiteSpace(blobPath) || string.IsNullOrWhiteSpace(sharedAccessPolicyName))
+				return result;
+
+			CloudBlob blob = await this.GetBlobFromPathAsync(storageAccount, containerName, blobPath);
+
+			CloudBlobContainer container = await this.GetContainerAsync(storageAccount, containerName, true);
 
 			SharedAccessBlobPolicy policy = await this.GetSharedAccessPolicy(container, sharedAccessPolicyName);
 
@@ -50,7 +56,7 @@ namespace pelazem.azure.storage
 		{
 			string result = string.Empty;
 
-			if (blob == null)
+			if (blob == null || string.IsNullOrWhiteSpace(sharedAccessPolicyName))
 				return result;
 
 			SharedAccessBlobPolicy policy = await this.GetSharedAccessPolicy(blob.Container, sharedAccessPolicyName);
@@ -61,23 +67,28 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
-		public async Task<string> GetBlobSAPUrlFromBlobUrlAsync(StorageConfig storageConfig, string blobUrl, string sharedAccessPolicyName)
-		{
-			ICloudBlob blob = await GetBlobFromUrlAsync(storageConfig, blobUrl);
-
-			string sapUrl = await GetBlobSAPUrlFromBlobAsync(blob, sharedAccessPolicyName);
-
-			return sapUrl;
-		}
-
-		public async Task<string> GetBlobSASUrlFromBlobPathAsync(StorageConfig storageConfig, string blobPath, DateTimeOffset expiryDateTime, SharedAccessBlobPermissions policyPermissions = SharedAccessBlobPermissions.Read)
+		public async Task<string> GetBlobSAPUrlFromBlobUrlAsync(CloudStorageAccount storageAccount, string blobUrl, string sharedAccessPolicyName)
 		{
 			string result = string.Empty;
 
-			if (string.IsNullOrWhiteSpace(blobPath))
+			if (storageAccount == null || string.IsNullOrWhiteSpace(blobUrl) || string.IsNullOrWhiteSpace(sharedAccessPolicyName))
 				return result;
 
-			CloudBlob blob = await this.GetBlobFromPathAsync(storageConfig, blobPath);
+			ICloudBlob blob = await GetBlobFromUrlAsync(storageAccount, blobUrl);
+
+			result = await GetBlobSAPUrlFromBlobAsync(blob, sharedAccessPolicyName);
+
+			return result;
+		}
+
+		public async Task<string> GetBlobSASUrlFromBlobPathAsync(CloudStorageAccount storageAccount, string containerName, string blobPath, DateTimeOffset expiryDateTime, SharedAccessBlobPermissions policyPermissions = SharedAccessBlobPermissions.Read)
+		{
+			string result = string.Empty;
+
+			if (storageAccount == null || string.IsNullOrWhiteSpace(containerName) || string.IsNullOrWhiteSpace(blobPath))
+				return result;
+
+			CloudBlob blob = await this.GetBlobFromPathAsync(storageAccount, containerName, blobPath);
 
 			SharedAccessBlobPolicy sasBlobPolicy = new SharedAccessBlobPolicy();
 			sasBlobPolicy.SharedAccessStartTime = DateTimeOffset.UtcNow.AddMinutes(-5); // For clock skew
@@ -118,25 +129,32 @@ namespace pelazem.azure.storage
 
 		public CloudBlob GetBlobFromPath(CloudBlobContainer container, string targetBlobPath)
 		{
+			if (container == null || string.IsNullOrWhiteSpace(targetBlobPath))
+				return null;
+
 			CloudBlob blob = container.GetBlobReference(targetBlobPath);
 
 			return blob;
 		}
 
-		public async Task<CloudBlob> GetBlobFromPathAsync(StorageConfig storageConfig, string targetBlobPath)
+		public async Task<CloudBlob> GetBlobFromPathAsync(CloudStorageAccount storageAccount, string containerName, string targetBlobPath)
 		{
-			CloudBlobContainer container = await this.GetContainerAsync(storageConfig, true);
+			if (storageAccount == null || string.IsNullOrWhiteSpace(containerName) || string.IsNullOrWhiteSpace(targetBlobPath))
+				return null;
+
+			CloudBlobContainer container = await this.GetContainerAsync(storageAccount, containerName, true);
 
 			CloudBlob blob = this.GetBlobFromPath(container, targetBlobPath);
 
 			return blob;
 		}
 
-		public async Task<ICloudBlob> GetBlobFromUrlAsync(StorageConfig storageConfig, string blobUrl)
+		public async Task<ICloudBlob> GetBlobFromUrlAsync(CloudStorageAccount storageAccount, string blobUrl)
 		{
-			StorageCredentials storageCredentials = this.GetStorageCredentials(storageConfig);
-			CloudStorageAccount storageAccount = this.GetStorageAccount(storageCredentials);
-			CloudBlobClient blobClient = this.GetBlobClient(storageAccount);
+			if (storageAccount == null || string.IsNullOrWhiteSpace(blobUrl))
+				return null;
+
+			CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
 
 			ICloudBlob result = await blobClient.GetBlobReferenceFromServerAsync(new Uri(blobUrl));
 
@@ -147,9 +165,9 @@ namespace pelazem.azure.storage
 
 		#region List Blobs
 
-		public async Task<IEnumerable<ICloudBlob>> ListBlobs(StorageConfig storageConfig)
+		public async Task<IEnumerable<ICloudBlob>> ListBlobs(CloudStorageAccount storageAccount, string containerName)
 		{
-			CloudBlobContainer container = await this.GetContainerAsync(storageConfig, true);
+			CloudBlobContainer container = await this.GetContainerAsync(storageAccount, containerName, true);
 
 			List<ICloudBlob> result = new List<ICloudBlob>();
 
@@ -173,18 +191,39 @@ namespace pelazem.azure.storage
 
 		#region Upload Blob
 
-		public async Task<bool> UploadFileFromUrlAsync(StorageConfig storageConfig, string sourceFileUrl, string targetBlobPath)
+		public async Task<OpResult> UploadFileFromUrlAsync(CloudStorageAccount storageAccount, string containerName, string sourceFileUrl, string targetBlobPath)
 		{
-			if (string.IsNullOrWhiteSpace(sourceFileUrl) || string.IsNullOrWhiteSpace(targetBlobPath))
-				return false;
+			OpResult result = new OpResult() { Succeeded = false };
 
-			bool result = false;
+			if (storageAccount == null)
+			{
+				result.Message = $"Parameter {nameof(storageAccount)} was null.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(containerName))
+			{
+				result.Message = $"Parameter {nameof(containerName)} was null or zero-length.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(sourceFileUrl))
+			{
+				result.Message = $"Parameter {nameof(sourceFileUrl)} was empty or whitespace.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(targetBlobPath))
+			{
+				result.Message = $"Parameter {nameof(targetBlobPath)} was empty or whitespace.";
+				return result;
+			}
 
 			try
 			{
 				WebRequest request = WebRequest.Create(sourceFileUrl);
 
-				request.Timeout = 30000; // 30 seconds
+				request.Timeout = 120000;
 				request.UseDefaultCredentials = true;
 				request.Proxy.Credentials = request.Credentials;
 
@@ -192,7 +231,7 @@ namespace pelazem.azure.storage
 				{
 					using (Stream stream = response.GetResponseStream())
 					{
-						result = await this.UploadStreamAsync(storageConfig, stream, targetBlobPath);
+						result = await this.UploadStreamAsync(storageAccount, containerName, stream, targetBlobPath);
 					}
 				}
 			}
@@ -200,57 +239,101 @@ namespace pelazem.azure.storage
 			{
 				// TODO log exception
 
-				result = false;
+				result.Succeeded = false;
+				result.Message = "Error! Exception caught. See Output property for Exception.";
+				result.Output = ex;
 			}
 
 			return result;
 		}
 
-		public async Task<bool> UploadFileFromLocalAsync(StorageConfig storageConfig, string sourceFilePath, string targetBlobPath)
+		public async Task<OpResult> UploadFileFromLocalAsync(CloudStorageAccount storageAccount, string containerName, string sourceFilePath, string targetBlobPath)
 		{
-			if
-			(
-				string.IsNullOrWhiteSpace(sourceFilePath) ||
-				string.IsNullOrWhiteSpace(targetBlobPath) ||
-				!File.Exists(sourceFilePath)
-			)
-				return false;
+			OpResult result = new OpResult() { Succeeded = false };
 
-			bool result = false;
+			if (storageAccount == null)
+			{
+				result.Message = $"Parameter {nameof(storageAccount)} was null.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(containerName))
+			{
+				result.Message = $"Parameter {nameof(containerName)} was null or zero-length.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(sourceFilePath))
+			{
+				result.Message = $"Parameter {nameof(sourceFilePath)} was empty or whitespace.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(targetBlobPath))
+			{
+				result.Message = $"Parameter {nameof(targetBlobPath)} was empty or whitespace.";
+				return result;
+			}
+
+			if (!File.Exists(sourceFilePath))
+			{
+				result.Message = $"Parameter {nameof(sourceFilePath)} file does not exist.";
+				return result;
+			}
 
 			try
 			{
 				using (FileStream stream = File.OpenRead(sourceFilePath))
 				{
-					result = await this.UploadStreamAsync(storageConfig, stream, targetBlobPath);
+					result = await this.UploadStreamAsync(storageAccount, containerName, stream, targetBlobPath);
 				}
 			}
 			catch (Exception ex)
 			{
 				// TODO log exception
 
-				result = false;
+				result.Succeeded = false;
+				result.Message = "Error! Exception caught. See Output property for Exception.";
+				result.Output = ex;
 			}
 
 			return result;
 		}
 
-		public async Task<bool> UploadStringAsync(StorageConfig storageConfig, string contents, string targetBlobPath)
+		public async Task<OpResult> UploadStringAsync(CloudStorageAccount storageAccount, string containerName, string contents, string targetBlobPath)
 		{
 			byte[] bytes = Encoding.UTF8.GetBytes(contents);
 
-			return await UploadByteArrayAsync(storageConfig, bytes, targetBlobPath);
+			return await UploadByteArrayAsync(storageAccount, containerName, bytes, targetBlobPath);
 		}
 
-		public async Task<bool> UploadStreamAsync(StorageConfig storageConfig, Stream sourceStream, string targetBlobPath)
+		public async Task<OpResult> UploadStreamAsync(CloudStorageAccount storageAccount, string containerName, Stream sourceStream, string targetBlobPath)
 		{
+			OpResult result = new OpResult() { Succeeded = false };
+
+			if (storageAccount == null)
+			{
+				result.Message = $"Parameter {nameof(storageAccount)} was null.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(containerName))
+			{
+				result.Message = $"Parameter {nameof(containerName)} was null or zero-length.";
+				return result;
+			}
+
 			if (sourceStream == null || sourceStream.Length == 0)
-				return false;
+			{
+				result.Message = $"Parameter {nameof(sourceStream)} was null or zero-length.";
+				return result;
+			}
 
 			if (string.IsNullOrWhiteSpace(targetBlobPath))
-				return false;
-
-			bool result = false;
+			{
+				result.Message = $"Parameter {nameof(targetBlobPath)} was empty or whitespace.";
+				return result;
+			}
 
 			try
 			{
@@ -263,31 +346,52 @@ namespace pelazem.azure.storage
 					bytes = memoryStream.ToArray();
 				}
 
-				result = await this.UploadByteArrayAsync(storageConfig, bytes, targetBlobPath);
+				result = await this.UploadByteArrayAsync(storageAccount, containerName, bytes, targetBlobPath);
 			}
 			catch (Exception ex)
 			{
 				// TODO log exception
 
-				result = false;
+				result.Succeeded = false;
+				result.Message = "Error! Exception caught. See Output property for Exception.";
+				result.Output = ex;
 			}
 
 			return result;
 		}
 
-		public async Task<bool> UploadByteArrayAsync(StorageConfig storageConfig, byte[] bytes, string targetBlobPath)
+		public async Task<OpResult> UploadByteArrayAsync(CloudStorageAccount storageAccount, string containerName, byte[] bytes, string targetBlobPath)
 		{
+			OpResult result = new OpResult() { Succeeded = false };
+
+			if (storageAccount == null)
+			{
+				result.Message = $"Parameter {nameof(storageAccount)} was null.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(containerName))
+			{
+				result.Message = $"Parameter {nameof(containerName)} was null or zero-length.";
+				return result;
+			}
+
+
 			if (bytes == null || bytes.Length == 0)
-				return false;
+			{
+				result.Message = $"Parameter {nameof(bytes)} was null or zero-length.";
+				return result;
+			}
 
 			if (string.IsNullOrWhiteSpace(targetBlobPath))
-				return false;
-
-			bool result = false;
+			{
+				result.Message = $"Parameter {nameof(targetBlobPath)} was empty or whitespace.";
+				return result;
+			}
 
 			try
 			{
-				CloudBlobContainer container = await this.GetContainerAsync(storageConfig, true);
+				CloudBlobContainer container = await this.GetContainerAsync(storageAccount, containerName, true);
 
 				CloudBlockBlob blob = container.GetBlockBlobReference(targetBlobPath);
 
@@ -295,13 +399,15 @@ namespace pelazem.azure.storage
 				await blob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
 
 				// Result is success if the blob exists - the upload operation does not return a status so we check success after the upload
-				result = await blob.ExistsAsync();
+				result.Succeeded = await blob.ExistsAsync();
 			}
 			catch (Exception ex)
 			{
 				// TODO log exception
 
-				result = false;
+				result.Succeeded = false;
+				result.Message = "Error! Exception caught. See Output property for Exception.";
+				result.Output = ex;
 			}
 
 			return result;
@@ -343,45 +449,25 @@ namespace pelazem.azure.storage
 
 		#endregion
 
-		#region Storage Primitives
-
-		public StorageConfig GetStorageConfig(string storageAccountName, string storageAccountKey, string containerName)
-		{
-			return new StorageConfig() { StorageAccountName = storageAccountName, StorageAccountKey = storageAccountKey, ContainerName = containerName };
-		}
-
-		public StorageCredentials GetStorageCredentials(StorageConfig storageConfig)
-		{
-			StorageCredentials storageCredentials = new StorageCredentials(storageConfig.StorageAccountName, storageConfig.StorageAccountKey);
-
-			return storageCredentials;
-		}
-
-		public CloudStorageAccount GetStorageAccount(StorageCredentials storageCredentials)
-		{
-			CloudStorageAccount storageAccount = new CloudStorageAccount(storageCredentials, true);
-
-			return storageAccount;
-		}
+		#region Blob
 
 		public CloudBlobClient GetBlobClient(CloudStorageAccount storageAccount)
 		{
-			CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-
-			return blobClient;
+			return storageAccount.CreateCloudBlobClient();
 		}
 
-		public async Task<CloudBlobContainer> GetContainerAsync(StorageConfig storageConfig, bool createIfNotExists, BlobContainerPublicAccessType publicAccessIfCreating = BlobContainerPublicAccessType.Off)
+		public async Task<CloudBlobContainer> GetContainerAsync(CloudStorageAccount storageAccount, string containerName, bool createIfNotExists, BlobContainerPublicAccessType publicAccessIfCreating = BlobContainerPublicAccessType.Off)
 		{
-			StorageCredentials storageCredentials = this.GetStorageCredentials(storageConfig);
-			CloudStorageAccount storageAccount = this.GetStorageAccount(storageCredentials);
-			CloudBlobClient blobClient = this.GetBlobClient(storageAccount);
-
 			CloudBlobContainer result = null;
+
+			if (storageAccount == null || string.IsNullOrWhiteSpace(containerName))
+				return result;
+
+			CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
 
 			try
 			{
-				result = blobClient.GetContainerReference(storageConfig.ContainerName);
+				result = blobClient.GetContainerReference(containerName);
 
 				if (!(await result.ExistsAsync()) && createIfNotExists)
 				{
@@ -399,6 +485,94 @@ namespace pelazem.azure.storage
 			}
 
 			return result;
+		}
+
+		#endregion
+
+		#region Queue
+
+		public async Task<OpResult> Enqueue(CloudStorageAccount storageAccount, string queueName, string message, TimeSpan? timeToLiveOnQueue = null, TimeSpan? timeBeforeVisible = null)
+		{
+			OpResult result = new OpResult() { Succeeded = false };
+
+			if (storageAccount == null)
+			{
+				result.Message = $"Parameter {nameof(storageAccount)} was null.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(queueName))
+			{
+				result.Message = $"Parameter {nameof(queueName)} was empty or whitespace.";
+				return result;
+			}
+
+			if (string.IsNullOrWhiteSpace(message))
+			{
+				result.Message = $"Parameter {nameof(message)} was empty or whitespace.";
+				return result;
+			}
+
+			CloudQueueClient queueClient = storageAccount.CreateCloudQueueClient();
+
+			CloudQueue queue = queueClient.GetQueueReference(queueName);
+
+			try
+			{
+				await queue.CreateIfNotExistsAsync();
+
+				await queue.AddMessageAsync(new CloudQueueMessage(message), timeToLiveOnQueue, timeBeforeVisible, null, null);
+
+				result.Succeeded = true;
+			}
+			catch (Exception ex)
+			{
+				// TODO Log Exception
+
+				// TODO log exception
+
+				result.Succeeded = false;
+				result.Message = "Error! Exception caught. See Output property for Exception.";
+				result.Output = ex;
+			}
+
+			return result;
+		}
+
+		#endregion
+
+		#region Storage Primitives
+
+		public StorageCredentials GetStorageCredentials(string storageAccountName, string storageAccountKey)
+		{
+			StorageCredentials storageCredentials = new StorageCredentials(storageAccountName, storageAccountKey);
+
+			return storageCredentials;
+		}
+
+		public CloudStorageAccount GetStorageAccount(StorageCredentials storageCredentials)
+		{
+			CloudStorageAccount storageAccount = new CloudStorageAccount(storageCredentials, true);
+
+			return storageAccount;
+		}
+
+		public CloudStorageAccount GetStorageAccount(string connectionString)
+		{
+			CloudStorageAccount storageAccount;
+
+			try
+			{
+				bool worked = CloudStorageAccount.TryParse(connectionString, out storageAccount);
+			}
+			catch (Exception ex)
+			{
+				// TODO log exception
+
+				storageAccount = null;
+			}
+
+			return storageAccount;
 		}
 
 		#endregion
