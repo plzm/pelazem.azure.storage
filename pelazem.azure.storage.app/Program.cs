@@ -40,7 +40,7 @@ namespace pelazem.azure.storage
 			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
 			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
 
-			var result = await svc.Enqueue(storageAccount, _queueName, "This is a test");
+			var result = await svc.EnqueueAsync(storageAccount, _queueName, "This is a test");
 		}
 
 		static async Task UploadBlob()

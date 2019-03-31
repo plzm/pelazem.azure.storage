@@ -491,7 +491,7 @@ namespace pelazem.azure.storage
 
 		#region Queue
 
-		public async Task<OpResult> Enqueue(CloudStorageAccount storageAccount, string queueName, string message, TimeSpan? timeToLiveOnQueue = null, TimeSpan? timeBeforeVisible = null)
+		public async Task<OpResult> EnqueueAsync(CloudStorageAccount storageAccount, string queueName, string message, TimeSpan? timeToLiveOnQueue = null, TimeSpan? timeBeforeVisible = null)
 		{
 			OpResult result = new OpResult() { Succeeded = false };
 
