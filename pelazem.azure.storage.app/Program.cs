@@ -21,27 +21,27 @@ namespace pelazem.azure.storage
 		private static string _containerName = "";
 		private static string _queueName = "";
 		private static string _policyName = "";
-		private static string _connString = "DefaultEndpointsProtocol=https;AccountName=fbtest9ecommsa;AccountKey=RDVwGJPLeJWZcEPZNubwfFxZrnNjhW3Qj1zoAxJ2HVxb8eWQWDo7gHgRUEeP2DjKjT2pBNwLMQkBJKlZ7gVKqw==;EndpointSuffix=core.windows.net";
+		private static string _connString = "";
 
 		static void Main(string[] args)
 		{
 			// Smoke tests...
 
-			// Enqueue().Wait();
+			//Enqueue().Wait();
 
-			// UploadBlob().Wait();
+			//UploadBlob().Wait();
 
 			ListBlobs().Wait();
 
-			// ProcessBlob(url).Wait();
+			//ProcessBlob(url).Wait();
 
 			// Reprocess().Wait();
 
-			// GetBlobContents().Wait();
+			GetBlobContents().Wait();
 
-			// CopyBlob().Wait();
+			CopyBlob().Wait();
 
-			// DeleteBlob().Wait();
+			DeleteBlob().Wait();
 
 			Console.WriteLine();
 			Console.WriteLine("Done. Press any key to exit.");
@@ -53,13 +53,14 @@ namespace pelazem.azure.storage
 			string sourceContainerName = "source";
 			string targetContainerName = "target";
 
-			string sourcePath = "/upload-shipment-body.txt";
-			string targetPath = "/foo/upload-shipment-body-bar.txt";
+			string sourcePath = "/abc.txt";
+			string targetPath = "/foo/abc.txt";
 
-			ServiceClient storageClient = new ServiceClient();
-			CloudStorageAccount sa = storageClient.GetStorageAccount(_connString);
+			CloudStorageAccount sa = Common.GetStorageAccount(_connString);
 
-			OpResult result = await storageClient.CopyBlockBlobAsync(sa, sourceContainerName, sourcePath, sa, targetContainerName, targetPath);
+			Blob blob = new Blob();
+
+			OpResult result = await blob.CopyBlockBlobAsync(sa, sourceContainerName, sourcePath, sa, targetContainerName, targetPath);
 
 			CloudBlockBlob targetBlob = result.Output as CloudBlockBlob;
 
@@ -75,12 +76,13 @@ namespace pelazem.azure.storage
 		static async Task DeleteBlob()
 		{
 			string containerName = "target";
-			string targetPath = "/foo/upload-shipment-body-bar.txt";
+			string targetPath = "/foo/abc.txt";
 
-			ServiceClient storageClient = new ServiceClient();
-			CloudStorageAccount sa = storageClient.GetStorageAccount(_connString);
+			CloudStorageAccount sa = Common.GetStorageAccount(_connString);
 
-			OpResult result = await storageClient.DeleteBlobByPathAsync(sa, containerName, targetPath);
+			Blob blob = new Blob();
+
+			OpResult result = await blob.DeleteBlobByPathAsync(sa, containerName, targetPath);
 
 			Console.WriteLine(result.Succeeded.ToString());
 			Console.WriteLine(result.Message);
@@ -88,15 +90,17 @@ namespace pelazem.azure.storage
 
 		static async Task GetBlobContents()
 		{
-			string blobUrl = "";
+			string blobUrl = "https://fbtest9ecommsa.blob.core.windows.net/source/inbound/test1.xml";
 
-			ServiceClient storageClient = new ServiceClient();
-			CloudStorageAccount sa = storageClient.GetStorageAccount(_connString);
-			ICloudBlob b = await storageClient.GetBlobFromUrlAsync(sa, blobUrl);
+			CloudStorageAccount sa = Common.GetStorageAccount(_connString);
+
+			Blob blob = new Blob();
+
+			ICloudBlob b = await blob.GetBlobFromUrlAsync(sa, blobUrl);
 
 			string result = string.Empty;
 
-			using (Stream contents = await storageClient.GetBlobContentsAsync(b))
+			using (Stream contents = await blob.GetBlobContentsAsync(b))
 			{
 				using (StreamReader reader = new StreamReader(contents))
 				{
@@ -104,66 +108,77 @@ namespace pelazem.azure.storage
 				}
 			}
 
-			Console.WriteLine(result);
+			Console.WriteLine($"{nameof(GetBlobContents)} = {result}");
 		}
 
-		static async Task Reprocess()
-		{
-			ServiceClient storageClient = new ServiceClient();
-			StorageCredentials credentials = storageClient.GetStorageCredentials(_accountName, _key);
-			CloudStorageAccount storageAccount = storageClient.GetStorageAccount(credentials);
+		//static async Task Reprocess()
+		//{
+		//	Queue queue = new Queue();
 
-			OpResult result = await storageClient.RetryPoisonQueueMessagesAsync(storageAccount, _queueName, 32);
-		}
+		//	StorageCredentials credentials = Common.GetStorageCredentials(_accountName, _key);
+
+		//	CloudStorageAccount storageAccount = Common.GetStorageAccount(credentials);
+
+		//	OpResult result = await queue.RetryPoisonQueueMessagesAsync(storageAccount, _queueName, 32);
+		//}
 
 		static async Task Enqueue()
 		{
-			ServiceClient storageClient = new ServiceClient();
+			Queue queue = new Queue();
 
-			StorageCredentials credentials = storageClient.GetStorageCredentials(_accountName, _key);
-			CloudStorageAccount storageAccount = storageClient.GetStorageAccount(credentials);
-			CloudQueue queue = (await storageClient.GetQueueAsync(storageAccount, _queueName, true)).Output;
+			StorageCredentials credentials = Common.GetStorageCredentials(_accountName, _key);
 
-			var result = await storageClient.EnqueueMessageAsync(storageAccount, queue, "This is a test");
+			CloudStorageAccount storageAccount = Common.GetStorageAccount(credentials);
+
+			CloudQueue q  = (await queue.GetQueueAsync(storageAccount, _queueName, true)).Output as CloudQueue;
+
+			var result = await queue.EnqueueMessageAsync(storageAccount, q, "This is a test");
+
+			Console.WriteLine($"{nameof(Enqueue)} = {result.ToString()}");
 		}
 
 		static async Task UploadBlob()
 		{
-			ServiceClient svc = new ServiceClient();
+			StorageCredentials credentials = Common.GetStorageCredentials(_accountName, _key);
 
-			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
-			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
+			CloudStorageAccount storageAccount = Common.GetStorageAccount(credentials);
 
-			var result = await svc.UploadStringAsync(storageAccount, _containerName, "This is a test", "foo.txt");
+			Blob blob = new Blob();
+
+			var result = await blob.UploadStringAsync(storageAccount, _containerName, "This is a test", "foo.txt");
+
+			Console.WriteLine($"{nameof(UploadBlob)} = {result.ToString()}");
 		}
 
 		static async Task ListBlobs()
 		{
-			ServiceClient svc = new ServiceClient();
-			CloudStorageAccount storageAccount = svc.GetStorageAccount(_connString);
+			CloudStorageAccount storageAccount = Common.GetStorageAccount(_connString);
 
-			List<ICloudBlob> blobs = (await svc.ListBlobs(storageAccount, "source", "inbound/")).ToList();
+			Blob blob = new Blob();
+
+			List<ICloudBlob> blobs = (await blob.ListBlobsAsync(storageAccount, "source", "inbound/")).ToList();
 
 			List<string> sasUrls = new List<string>();
 
-			foreach (ICloudBlob blob in blobs)
-				sasUrls.Add(await svc.GetBlobSAPUrlFromBlobAsync(blob, _policyName));
+			foreach (ICloudBlob cloudBlob in blobs)
+				sasUrls.Add(await blob.GetBlobSAPUrlFromBlobAsync(cloudBlob, _policyName));
 
 			Debug.WriteLine(sasUrls.Count);
 		}
 
-		static async Task ProcessBlob(string url)
-		{
-			ServiceClient svc = new ServiceClient();
+		//static async Task ProcessBlob(string url)
+		//{
+		//	StorageCredentials credentials = Common.GetStorageCredentials(_accountName, _key);
 
-			StorageCredentials credentials = svc.GetStorageCredentials(_accountName, _key);
-			CloudStorageAccount storageAccount = svc.GetStorageAccount(credentials);
+		//	CloudStorageAccount storageAccount = Common.GetStorageAccount(credentials);
 
-			ICloudBlob blob = await svc.GetBlobFromUrlAsync(storageAccount, url);
+		//	Blob blob = new Blob();
 
-			string sasUrl = await svc.GetBlobSAPUrlFromBlobAsync(blob, _policyName);
+		//	ICloudBlob cloudBlob = await blob.GetBlobFromUrlAsync(storageAccount, url);
 
-			Debug.WriteLine(sasUrl);
-		}
+		//	string sasUrl = await blob.GetBlobSAPUrlFromBlobAsync(cloudBlob, _policyName);
+
+		//	Debug.WriteLine(sasUrl);
+		//}
 	}
 }

@@ -196,11 +196,58 @@ namespace pelazem.azure.storage
 			return stream;
 		}
 
+		public async Task<string> GetBlobContentsAsync(Stream stream)
+		{
+			if (stream == null || !stream.CanRead)
+				return string.Empty;
+
+			string result = string.Empty;
+
+			stream.Position = 0;
+
+			using (StreamReader reader = new StreamReader(stream))
+			{
+				result = await reader.ReadToEndAsync();
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Overload that ties blob content retrieval together and specifies string output
+		/// </summary>
+		/// <param name="storageAccountConnectionString"></param>
+		/// <param name="blobUrl"></param>
+		/// <returns></returns>
+		public async Task<string> GetBlobContentsAsync(string storageAccountConnectionString, string blobUrl)
+		{
+			if (string.IsNullOrWhiteSpace(storageAccountConnectionString) || string.IsNullOrWhiteSpace(blobUrl))
+				return string.Empty;
+
+			CloudStorageAccount storageAccount = Common.GetStorageAccount(storageAccountConnectionString);
+
+			ValidationResult validationResult = Validator.ValidateStorageAccount(storageAccount);
+
+			if (!validationResult.IsValid)
+				return null;
+
+			string result = string.Empty;
+
+			ICloudBlob b = await this.GetBlobFromUrlAsync(storageAccount, blobUrl);
+
+			using (Stream contents = await this.GetBlobContentsAsync(b))
+			{
+				result = await this.GetBlobContentsAsync(contents);
+			}
+
+			return result;
+		}
+
 		#endregion
 
 		#region List Blobs
 
-		public async Task<IEnumerable<ICloudBlob>> ListBlobs(CloudStorageAccount storageAccount, string containerName, string blobNamePrefix = "", int? maxResultsPerSegment = 50)
+		public async Task<IEnumerable<ICloudBlob>> ListBlobsAsync(CloudStorageAccount storageAccount, string containerName, string blobNamePrefix = "", int? maxResultsPerSegment = 50)
 		{
 			ValidationResult result = new ValidationResult();
 			result.Validations.AddItems(Validator.ValidateStorageAccount(storageAccount).Validations);
@@ -501,6 +548,49 @@ namespace pelazem.azure.storage
 			{
 				opResult.Succeeded = false;
 				opResult.Message = "Specified blob does not exist.";
+			}
+
+			return opResult;
+		}
+
+		public async Task<OpResult> WriteBlobAsync(string storageAccountConnectionString, string containerName, string fileContents, string filePath)
+		{
+			OpResult opResult = new OpResult();
+
+			CloudStorageAccount storageAccount = Common.GetStorageAccount(storageAccountConnectionString);
+
+			ValidationResult validationResult = new ValidationResult();
+			validationResult.Validations.AddItems(Validator.ValidateStorageAccount(storageAccount).Validations);
+			validationResult.Validations.AddItems(Validator.ValidateContainerName(containerName).Validations);
+			validationResult.Validations.AddItems(Validator.ValidateFilePath(filePath).Validations);
+
+			opResult.ValidationResult = validationResult;
+
+			if (!validationResult.IsValid)
+				return opResult;
+
+			// Serialize file contents to byte array
+			byte[] bytes = Encoding.UTF8.GetBytes(fileContents);
+
+			try
+			{
+				CloudBlobContainer container = await this.GetContainerAsync(storageAccount, containerName, true);
+
+				CloudBlockBlob blob = container.GetBlockBlobReference(filePath);
+
+				// Upload the file
+				await blob.UploadFromByteArrayAsync(bytes, 0, bytes.Length);
+
+				// Result is success if the blob exists - the upload operation does not return a status so we check success after the upload
+				opResult.Succeeded = await blob.ExistsAsync();
+			}
+			catch (Exception ex)
+			{
+				// TODO log error
+
+				opResult.Succeeded = false;
+				opResult.Message = ErrorUtil.GetText(ex);
+				opResult.Exception = ex;
 			}
 
 			return opResult;
