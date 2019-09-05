@@ -90,7 +90,7 @@ namespace pelazem.azure.storage
 
 		static async Task GetBlobContents()
 		{
-			string blobUrl = "https://fbtest9ecommsa.blob.core.windows.net/source/inbound/test1.xml";
+			string blobUrl = "PROVIDE";
 
 			CloudStorageAccount sa = Common.GetStorageAccount(_connString);
 
