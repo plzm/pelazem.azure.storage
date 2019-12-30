@@ -684,7 +684,7 @@ namespace pelazem.azure.storage
 						await result.SetPermissionsAsync(new BlobContainerPermissions() { PublicAccess = publicAccessIfCreating });
 				}
 			}
-			catch (Exception ex)
+			catch
 			{
 				// TODO log exception
 

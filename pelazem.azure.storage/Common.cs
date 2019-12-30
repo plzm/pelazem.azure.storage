@@ -32,7 +32,7 @@ namespace pelazem.azure.storage
 			{
 				bool worked = CloudStorageAccount.TryParse(connectionString, out storageAccount);
 			}
-			catch (Exception ex)
+			catch
 			{
 				// TODO log exception
 
