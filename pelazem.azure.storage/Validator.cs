@@ -95,7 +95,7 @@ namespace pelazem.azure.storage
 			if (string.IsNullOrWhiteSpace(queueMessage))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessage)} was null, empty, or whitespace." });
 
-			if ((queueMessage.Length * sizeof(Char)) > 64000)
+			if ((!string.IsNullOrWhiteSpace(queueMessage)) && ((queueMessage.Length * sizeof(Char)) > 64000))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessage)} length exceeds 64 KiB, which is the Azure storage queue max size." });
 
 			return result;
