@@ -112,5 +112,21 @@ namespace pelazem.azure.storage.tests
 			Assert.False(validationResult.IsValid);
 		}
 
+		[Theory]
+		[InlineData(null)]
+		[InlineData("")]
+		public void ValidateQueueNameShouldReturnFalseForNullOrWhitespace(string value)
+		{
+			// Arrange
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateQueueName(value);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
 	}
 }
