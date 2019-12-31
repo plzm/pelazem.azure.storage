@@ -68,5 +68,19 @@ namespace pelazem.azure.storage.tests
 			Assert.False(validationResult.IsValid);
 		}
 
+		[Fact]
+		public void ValidateBlobShouldReturnFalseForNull()
+		{
+			// Arrange
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateBlob(null);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
 	}
 }
