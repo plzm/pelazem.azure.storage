@@ -5,6 +5,7 @@ using System.Text;
 using Xunit;
 using pelazem.azure.storage;
 using pelazem.util;
+using Microsoft.Azure.Storage.Queue;
 
 namespace pelazem.azure.storage.tests
 {
@@ -138,6 +139,21 @@ namespace pelazem.azure.storage.tests
 
 			// Act
 			ValidationResult validationResult = Validator.ValidateQueueMessage(value);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateQueueMessageShouldReturnFalseForNull()
+		{
+			// Arrange
+			CloudQueueMessage qm = null;
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateQueueMessage(qm);
 
 			// Assert
 			Assert.Equal(1, validationResult.Validations.Count);
