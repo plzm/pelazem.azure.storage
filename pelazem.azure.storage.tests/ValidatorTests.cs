@@ -21,6 +21,21 @@ namespace pelazem.azure.storage.tests
 			// Assert
 			Assert.Equal(1, validationResult.Validations.Count);
 			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateContainerShouldReturnFalseForNull()
+		{
+			// Arrange
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateContainer(null);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
 		}
 	}
 }
