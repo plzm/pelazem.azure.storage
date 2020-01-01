@@ -10,6 +10,7 @@ using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.Storage.Queue.Protocol;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Microsoft.Azure.Storage;
+using Microsoft.Azure.Storage.Blob;
 
 namespace pelazem.azure.storage.tests
 {
@@ -59,6 +60,21 @@ namespace pelazem.azure.storage.tests
 			Assert.False(validationResult.IsValid);
 		}
 
+		[Fact]
+		public void ValidateContainerShouldReturnTrueForNonNull()
+		{
+			// Arrange
+			CloudBlobContainer container = new CloudBlobContainer(new Uri("http://foo/bar"));
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateContainer(container);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.True(validationResult.Validations[0].IsValid);
+			Assert.True(validationResult.IsValid);
+		}
+
 		[Theory]
 		[InlineData(null)]
 		[InlineData("")]
@@ -73,6 +89,22 @@ namespace pelazem.azure.storage.tests
 			Assert.Equal(1, validationResult.Validations.Count);
 			Assert.False(validationResult.Validations[0].IsValid);
 			Assert.False(validationResult.IsValid);
+		}
+
+		[Theory]
+		[InlineData("foo")]
+		[InlineData("bar")]
+		public void ValidateContainerShouldReturnTrueForNonNullNonEmptyOrWhitespaceName(string value)
+		{
+			// Arrange
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateContainerName(value);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.True(validationResult.Validations[0].IsValid);
+			Assert.True(validationResult.IsValid);
 		}
 
 		[Fact]

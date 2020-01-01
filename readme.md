@@ -1,6 +1,6 @@
 # Azure Storage Wrapper Library
 
-[![Build status](https://dev.azure.com/paelaz/pelazem.azure.storage/_apis/build/status/Build)]
+[![Build status](https://dev.azure.com/paelaz/pelazem.azure.storage/_apis/build/status/Build-CI)](https://dev.azure.com/paelaz/pelazem.azure.storage/_build/latest?definitionId=18)
 
 .NET Standard 2.1 Library to make various Azure storage operations more convenient. Uses the Azure storage SDK.
 
