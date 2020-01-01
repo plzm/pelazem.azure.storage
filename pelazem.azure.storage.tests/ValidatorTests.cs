@@ -5,9 +5,11 @@ using System.Text;
 using Xunit;
 using pelazem.azure.storage;
 using pelazem.util;
+using Microsoft.Azure.Storage.Auth;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.Storage.Queue.Protocol;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using Microsoft.Azure.Storage;
 
 namespace pelazem.azure.storage.tests
 {
@@ -25,6 +27,22 @@ namespace pelazem.azure.storage.tests
 			Assert.Equal(1, validationResult.Validations.Count);
 			Assert.False(validationResult.Validations[0].IsValid);
 			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateStorageAccountShouldReturnTrueForNonNull()
+		{
+			// Arrange
+			StorageCredentials cred = new StorageCredentials("test", System.Text.Encoding.UTF8.GetBytes(" "));
+			CloudStorageAccount sa = new CloudStorageAccount(cred, false);
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateStorageAccount(sa);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.True(validationResult.Validations[0].IsValid);
+			Assert.True(validationResult.IsValid);
 		}
 
 		[Fact]
@@ -243,6 +261,5 @@ namespace pelazem.azure.storage.tests
 			Assert.False(validationResult.Validations[0].IsValid);
 			Assert.False(validationResult.IsValid);
 		}
-
 	}
 }
