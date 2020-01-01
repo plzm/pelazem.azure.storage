@@ -91,6 +91,22 @@ namespace pelazem.azure.storage.tests
 			Assert.False(validationResult.IsValid);
 		}
 
+		[Theory]
+		[InlineData("foo")]
+		[InlineData("bar")]
+		public void ValidateContainerShouldReturnTrueForNonNullNonEmptyOrWhitespaceName(string value)
+		{
+			// Arrange
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateContainerName(value);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.True(validationResult.Validations[0].IsValid);
+			Assert.True(validationResult.IsValid);
+		}
+
 		[Fact]
 		public void ValidateBlobClientShouldReturnFalseForNull()
 		{
