@@ -143,14 +143,14 @@ namespace pelazem.azure.storage
 
 		#endregion
 
-		public static ValidationResult ValidateFilePath(string filePath)
+		public static ValidationResult ValidateFilePath(string filePath, bool checkFileExistsInFileSystem = false)
 		{
 			ValidationResult result = new ValidationResult();
 
 			if (string.IsNullOrWhiteSpace(filePath))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(filePath)} was null, empty, or whitespace." });
 
-			if (!File.Exists(filePath))
+			if (checkFileExistsInFileSystem && !File.Exists(filePath))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"Parameter {nameof(filePath)} file does not exist." });
 
 			if (result.Validations.Count == 0)
