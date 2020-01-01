@@ -7,6 +7,7 @@ using pelazem.azure.storage;
 using pelazem.util;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.Storage.Queue.Protocol;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 
 namespace pelazem.azure.storage.tests
 {
@@ -220,6 +221,22 @@ namespace pelazem.azure.storage.tests
 
 			// Act
 			ValidationResult validationResult = Validator.ValidateFilePath(value);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateFilePathShouldReturnFalseForNonexistentFileWithFilesystemCheck()
+		{
+			// Arrange
+			string badFilePath = @"c:\foo\bar.txt";
+			bool checkFileExistsInFileSystem = true;
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateFilePath(badFilePath, checkFileExistsInFileSystem);
 
 			// Assert
 			Assert.Equal(1, validationResult.Validations.Count);
