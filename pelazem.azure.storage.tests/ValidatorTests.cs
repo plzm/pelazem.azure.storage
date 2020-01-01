@@ -64,10 +64,10 @@ namespace pelazem.azure.storage.tests
 		public void ValidateContainerShouldReturnTrueForNonNull()
 		{
 			// Arrange
-			CloudBlobContainer container = new CloudBlobContainer(new Uri("http://foo"));
+			CloudBlobContainer container = new CloudBlobContainer(new Uri("http://foo/bar"));
 
 			// Act
-			ValidationResult validationResult = Validator.ValidateContainer(null);
+			ValidationResult validationResult = Validator.ValidateContainer(container);
 
 			// Assert
 			Assert.Equal(1, validationResult.Validations.Count);
