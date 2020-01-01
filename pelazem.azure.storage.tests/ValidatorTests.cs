@@ -6,6 +6,7 @@ using Xunit;
 using pelazem.azure.storage;
 using pelazem.util;
 using Microsoft.Azure.Storage.Queue;
+using Microsoft.Azure.Storage.Queue.Protocol;
 
 namespace pelazem.azure.storage.tests
 {
@@ -158,6 +159,54 @@ namespace pelazem.azure.storage.tests
 			// Assert
 			Assert.Equal(1, validationResult.Validations.Count);
 			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateQueueMessagesShouldReturnFalseForNull()
+		{
+			// Arrange
+			List<CloudQueueMessage> queueMessages = null;
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateQueueMessages(queueMessages);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateQueueMessagesShouldReturnFalseForEmpty()
+		{
+			// Arrange
+			List<CloudQueueMessage> queueMessages = new List<CloudQueueMessage>();
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateQueueMessages(queueMessages);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.IsValid);
+		}
+
+		[Fact]
+		public void ValidateQueueMessagesShouldReturnFalseForAtLeastOneInvalidMessage()
+		{
+			// Arrange
+			List<CloudQueueMessage> queueMessages = new List<CloudQueueMessage>();
+			queueMessages.Add(null);
+			queueMessages.Add(new CloudQueueMessage("msg1", "rcpt1"));
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateQueueMessages(queueMessages);
+
+			// Assert
+			Assert.Equal(queueMessages.Count, validationResult.Validations.Count);
+			Assert.False(validationResult.Validations[0].IsValid);
+			Assert.False(validationResult.Validations[1].IsValid);
 			Assert.False(validationResult.IsValid);
 		}
 
