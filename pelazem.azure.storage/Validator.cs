@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Azure.Storage;
 using Microsoft.Azure.Storage.Auth;
 using Microsoft.Azure.Storage.Blob;
@@ -19,7 +21,10 @@ namespace pelazem.azure.storage
 
 			if (storageAccount == null)
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(storageAccount)} was null." });
-			
+
+			if (result.Validations.Count == 0)
+				result.Validations.Add(new Validation() { IsValid = true });
+
 			return result;
 		}
 
@@ -48,6 +53,9 @@ namespace pelazem.azure.storage
 
 			if (blobClient == null)
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(blobClient)} was null." });
+
+			if (result.Validations.Count == 0)
+				result.Validations.Add(new Validation() { IsValid = true });
 
 			return result;
 		}
@@ -80,6 +88,9 @@ namespace pelazem.azure.storage
 			if (queue == null)
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queue)} was null." });
 
+			if (result.Validations.Count == 0)
+				result.Validations.Add(new Validation() { IsValid = true });
+
 			return result;
 		}
 
@@ -95,8 +106,11 @@ namespace pelazem.azure.storage
 			if (string.IsNullOrWhiteSpace(queueMessage))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessage)} was null, empty, or whitespace." });
 
-			if ((queueMessage.Length * sizeof(Char)) > 64000)
+			if ((!string.IsNullOrWhiteSpace(queueMessage)) && ((queueMessage.Length * sizeof(Char)) > 64000))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessage)} length exceeds 64 KiB, which is the Azure storage queue max size." });
+
+			if (result.Validations.Count == 0)
+				result.Validations.Add(new Validation() { IsValid = true });
 
 			return result;
 		}
@@ -107,6 +121,8 @@ namespace pelazem.azure.storage
 
 			if (queueMessage == null)
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessage)} was null." });
+			else
+				result.Validations.AddItems(ValidateQueueMessage(queueMessage.AsString).Validations);
 
 			return result;
 		}
@@ -117,25 +133,31 @@ namespace pelazem.azure.storage
 
 			if (queueMessages == null)
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessages)} was null." });
+			else if (queueMessages.Count() == 0)
+				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(queueMessages)} was empty." });
+			else
+				queueMessages.AsParallel().ForAll(qm => result.Validations.AddItems(ValidateQueueMessage(qm).Validations));
 
 			return result;
 		}
 
 		#endregion
 
-		public static ValidationResult ValidateFilePath(string filePath)
+		public static ValidationResult ValidateFilePath(string filePath, bool checkFileExistsInFileSystem = false)
 		{
 			ValidationResult result = new ValidationResult();
 
 			if (string.IsNullOrWhiteSpace(filePath))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(filePath)} was null, empty, or whitespace." });
 
-			if (!File.Exists(filePath))
+			if (checkFileExistsInFileSystem && !File.Exists(filePath))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"Parameter {nameof(filePath)} file does not exist." });
+
+			if (result.Validations.Count == 0)
+				result.Validations.Add(new Validation() { IsValid = true });
 
 			return result;
 		}
-
 
 		private static ValidationResult StorageNameValidatorWorker(string name, Action<string> nameValidatorMethod)
 		{
@@ -143,7 +165,7 @@ namespace pelazem.azure.storage
 
 			if (string.IsNullOrWhiteSpace(name))
 				result.Validations.Add(new Validation() { IsValid = false, Message = $"{nameof(name)} was null, empty, or whitespace." });
-			
+
 			if (result.IsValid)
 			{
 				try
@@ -155,6 +177,9 @@ namespace pelazem.azure.storage
 					result.Validations.Add(new Validation() { IsValid = false, Message = $"{name} was invalid.{Environment.NewLine}{ex.Message}{Environment.NewLine}Please consult Azure Storage naming guidelines at https://docs.microsoft.com/rest/api/storageservices/Naming-and-Referencing-Containers--Blobs--and-Metadata." });
 				}
 			}
+
+			if (result.Validations.Count == 0)
+				result.Validations.Add(new Validation() { IsValid = true });
 
 			return result;
 		}
