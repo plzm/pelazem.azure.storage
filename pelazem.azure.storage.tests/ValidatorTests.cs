@@ -122,6 +122,21 @@ namespace pelazem.azure.storage.tests
 		}
 
 		[Fact]
+		public void ValidateBlobClientShouldReturnTrueForNonNull()
+		{
+			// Arrange
+			CloudBlobClient client = new CloudBlobClient(new Uri("http://foo"));
+
+			// Act
+			ValidationResult validationResult = Validator.ValidateBlobClient(client);
+
+			// Assert
+			Assert.Equal(1, validationResult.Validations.Count);
+			Assert.True(validationResult.Validations[0].IsValid);
+			Assert.True(validationResult.IsValid);
+		}
+
+		[Fact]
 		public void ValidateBlobShouldReturnFalseForNull()
 		{
 			// Arrange
