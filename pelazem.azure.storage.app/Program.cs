@@ -16,11 +16,11 @@ namespace pelazem.azure.storage
 {
 	class Program
 	{
-		private static string _accountName = "frprocsa";
-		private static string _key = "WS9fi3Ij+VAUmAl+z1LQdimdXSSuYE5q8eXvqBn6FcDh56hmHGfKiFbLrqTXN4D790eFw39tAI728NKeKgvjLw==";
-		private static string _containerName = "hotel-folios-train-unlabeled";
+		private static string _accountName = "";
+		private static string _key = "";
+		private static string _containerName = "";
 		private static string _queueName = "";
-		private static string _policyName = "sap-read-list";
+		private static string _policyName = "";
 		private static string _connString = "";
 
 		static void Main(string[] args)
