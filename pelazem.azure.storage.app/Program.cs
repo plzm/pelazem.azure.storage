@@ -16,11 +16,11 @@ namespace pelazem.azure.storage
 {
 	class Program
 	{
-		private static string _accountName = "";
-		private static string _key = "";
-		private static string _containerName = "";
+		private static string _accountName = "frprocsa";
+		private static string _key = "WS9fi3Ij+VAUmAl+z1LQdimdXSSuYE5q8eXvqBn6FcDh56hmHGfKiFbLrqTXN4D790eFw39tAI728NKeKgvjLw==";
+		private static string _containerName = "hotel-folios-train-unlabeled";
 		private static string _queueName = "";
-		private static string _policyName = "";
+		private static string _policyName = "sap-read-list";
 		private static string _connString = "";
 
 		static void Main(string[] args)
@@ -31,21 +31,38 @@ namespace pelazem.azure.storage
 
 			//UploadBlob().Wait();
 
-			ListBlobs().Wait();
+			//ListBlobs().Wait();
 
 			//ProcessBlob(url).Wait();
 
 			// Reprocess().Wait();
 
-			GetBlobContents().Wait();
+			//GetBlobContents().Wait();
 
-			CopyBlob().Wait();
+			//CopyBlob().Wait();
 
-			DeleteBlob().Wait();
+			//DeleteBlob().Wait();
+
+			GetContainerSAPURL().Wait();
 
 			Console.WriteLine();
 			Console.WriteLine("Done. Press any key to exit.");
 			Console.ReadKey();
+		}
+
+		static async Task GetContainerSAPURL()
+		{
+			StorageCredentials cred = new StorageCredentials(_accountName, _key);
+
+			CloudStorageAccount sa = Common.GetStorageAccount(cred);
+
+			Blob blob = new Blob();
+
+			string url = await blob.GetContainerSAPUrlAsync(sa, _containerName, _policyName);
+			Console.WriteLine($"URL={url}");
+
+			var cnt = (new CloudBlobContainer(new Uri(url))).ListBlobs().Count();
+			Console.WriteLine(cnt.ToString());
 		}
 
 		static async Task CopyBlob()

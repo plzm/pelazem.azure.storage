@@ -129,6 +129,20 @@ namespace pelazem.azure.storage
 			return result;
 		}
 
+		public async Task<string> GetContainerSAPUrlAsync(CloudStorageAccount storageAccount, string containerName, string sharedAccessPolicyName)
+		{
+			string result = string.Empty;
+
+			if (storageAccount == null || string.IsNullOrWhiteSpace(containerName) || string.IsNullOrWhiteSpace(sharedAccessPolicyName))
+				return result;
+
+			CloudBlobContainer container = await this.GetContainerAsync(storageAccount, containerName, true);
+
+			result = container.Uri.AbsoluteUri + container.GetSharedAccessSignature(null, sharedAccessPolicyName);
+			
+			return result;
+		}
+
 		#endregion
 
 		#region Get Blob

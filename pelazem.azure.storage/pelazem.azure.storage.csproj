@@ -4,14 +4,14 @@
 	<DebugType>Full</DebugType>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>4.0.1</Version>
+    <Version>4.0.2</Version>
     <Authors>Patrick El-Azem (www.linkedin.com/in/pelazem)</Authors>
     <Description>A wrapper library around Azure storage that presents a simplified interface for typical Azure storage operations.</Description>
     <PackageProjectUrl>https://github.com/plzm/pelazem.azure.storage</PackageProjectUrl>
     <RepositoryUrl>https://github.com/plzm/pelazem.azure.storage</RepositoryUrl>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <AssemblyVersion>4.0.1.0</AssemblyVersion>
-    <FileVersion>4.0.1.0</FileVersion>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
+    <FileVersion>4.0.2.0</FileVersion>
     <LangVersion>latest</LangVersion>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
