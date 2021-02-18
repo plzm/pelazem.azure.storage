@@ -26,7 +26,7 @@
     <PackageReference Include="Microsoft.Azure.Storage.Blob" Version="11.1.2" />
     <PackageReference Include="Microsoft.Azure.Storage.Common" Version="11.1.2" />
     <PackageReference Include="Microsoft.Azure.Storage.Queue" Version="11.1.2" />
-    <PackageReference Include="pelazem.util" Version="4.0.1" />
+    <PackageReference Include="pelazem.util" Version="5.0.0" />
   </ItemGroup>
 
 </Project>
